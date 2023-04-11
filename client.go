@@ -87,7 +87,3 @@ func (c *Client) Close() {
 func (c *Client) IsConnected() bool {
 	return c.MQTT.IsConnectionOpen()
 }
-
-func (c *Client) PushDataPoint() {
-
-}
