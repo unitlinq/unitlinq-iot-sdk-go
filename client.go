@@ -64,7 +64,7 @@ func NewInstance(options ClientOptions) (Client, error) {
 	opts.AddBroker("ssl://gateway.unitgrid.in:8883")
 	opts.SetUsername("device")
 	opts.SetClientID(client.ClientID)
-	opts.SetTLSConfig(client.TlsConfig)
+	opts.SetTLSConfig(&client.TlsConfig)
 	//opts.SetCleanSession(true)
 	//opts.SetStore(mqtt.NewFileStore(config.GlobalConfig.GetString("store") + "mqstore"))
 	opts.SetConnectRetryInterval(10 * time.Second)
@@ -74,4 +74,20 @@ func NewInstance(options ClientOptions) (Client, error) {
 	opts.SetCleanSession(false)
 	client.MQTT = mqtt.NewClient(opts)
 	return client, nil
+}
+
+func (c *Client) Connect() Token {
+	return c.MQTT.Connect()
+}
+
+func (c *Client) Close() {
+	c.MQTT.Disconnect(1000)
+}
+
+func (c *Client) IsConnected() bool {
+	return c.MQTT.IsConnectionOpen()
+}
+
+func (c *Client) PushDataPoint() {
+
 }
