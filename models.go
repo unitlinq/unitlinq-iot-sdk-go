@@ -1,5 +1,17 @@
 package unitlinq
 
+import mqtt "github.com/eclipse/paho.mqtt.golang"
+
+type Subscripiton struct {
+	Topic    string
+	Qos      byte
+	Callback mqtt.MessageHandler
+}
+
+var SubscriptionPool []Subscripiton
+var responseSubscribed bool
+var clientID string
+
 type EnergyStruct struct {
 	V1          float32
 	V2          float32
@@ -55,9 +67,39 @@ type NodeParamFloat struct {
 	Timestamp int64
 }
 
+type genericReposne struct {
+	RequestID int32  `cbor:"reqid"`
+	Success   bool   `cbor:"success"`
+	Error     string `cbor:"error"`
+	ErrCode   int32  `cbor:"errcode"`
+	Payload   []byte `cbor:"data"`
+}
+
 type pushNodeParamFloat struct {
 	DeviceID  []byte  `cbor:"nid"`
 	ParamID   []byte  `cbor:"pid"`
 	Value     float32 `cbor:"v"`
 	Timestamp int64   `cbor:"ts"`
 }
+
+type configReq struct {
+	RequestID int32 `cbor:"reqid"`
+}
+
+type ConfigMetaDataResp struct {
+	UpdatedOn int32 `cbor:"updatedon"`
+}
+
+type ConfigResp struct {
+	Data []byte `cbor:"data"`
+}
+
+type ResponseCallback func(requestID int, payload []byte)
+
+type responseObject struct {
+	Channel  chan bool
+	Callback ResponseCallback
+	Data     genericReposne
+}
+
+var waitResponse = make(map[int32]responseObject)

@@ -11,14 +11,23 @@ import (
 )
 
 type ClientOptions struct {
-	Cert    string
-	CertKey string
+	Cert           string
+	CertKey        string
+	StorageType    int
+	Store          string
+	RequestTimeout time.Duration
 }
+
+const (
+	Memory int = 0
+	File   int = 1
+)
 
 type Client struct {
 	TlsConfig tls.Config
 	MQTT      mqtt.Client
 	ClientID  uuid.UUID
+	timeout   time.Duration
 }
 
 type Token = mqtt.Token
@@ -63,25 +72,35 @@ func NewInstance(options ClientOptions) (Client, error) {
 		RootCAs:      certPool,
 		Certificates: []tls.Certificate{cert},
 	}
-
+	client.timeout = options.RequestTimeout
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker("ssl://gateway.unitgrid.in:8883")
 	opts.SetUsername("device")
 	opts.SetClientID(client.ClientID.String())
 	opts.SetTLSConfig(&client.TlsConfig)
 	//opts.SetCleanSession(true)
-	//opts.SetStore(mqtt.NewFileStore(config.GlobalConfig.GetString("store") + "mqstore"))
+	switch options.StorageType {
+	case Memory:
+		opts.SetStore(mqtt.NewMemoryStore())
+	case File:
+		opts.SetStore(mqtt.NewFileStore(options.Store + "mqttstore"))
+	}
 	opts.SetConnectRetryInterval(10 * time.Second)
 	opts.SetConnectRetry(true)
 	opts.SetAutoReconnect(true)
+	opts.SetOnConnectHandler(ugconnectHandler)
 	//opts.SetConnectionLostHandler(ugconnectionLostHandler)
-	opts.SetCleanSession(false)
+	opts.SetCleanSession(true)
 	client.MQTT = mqtt.NewClient(opts)
+	clientID = client.GetClientID()
 	return client, nil
 }
 
 func (c *Client) Connect() Token {
-	return c.MQTT.Connect()
+	token := c.MQTT.Connect()
+	c.safeSubcscribe("device/"+c.GetClientID()+"/api/response/cbor", 1, defaultResponseHandler)
+	responseSubscribed = true
+	return token
 }
 
 func (c *Client) Close() {
@@ -90,4 +109,43 @@ func (c *Client) Close() {
 
 func (c *Client) IsConnected() bool {
 	return c.MQTT.IsConnectionOpen()
+}
+
+func (c *Client) GetClientID() string {
+	return c.ClientID.String()
+}
+
+func (c *Client) safeSubcscribe(topic string, qos byte, callaback mqtt.MessageHandler) error {
+	token := c.MQTT.Subscribe(topic, qos, callaback)
+	if token.Wait() && token.Error() != nil {
+		return token.Error()
+	}
+	temp := Subscripiton{
+		Topic:    topic,
+		Qos:      qos,
+		Callback: callaback,
+	}
+	SubscriptionPool = append(SubscriptionPool, temp)
+	return nil
+}
+
+var ugconnectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
+	fmt.Println("Connection Established")
+	fmt.Println("Subscribing the topics")
+	for _, v := range SubscriptionPool {
+		token := client.Subscribe(v.Topic, v.Qos, v.Callback)
+		if token.Wait() && token.Error() != nil {
+			fmt.Println(token.Error())
+		}
+		fmt.Printf("Subscribed: %s\n", v.Topic)
+	}
+}
+
+func (c *Client) safeSubAppend(topic string, qos byte, callaback mqtt.MessageHandler) {
+	temp := Subscripiton{
+		Topic:    topic,
+		Qos:      qos,
+		Callback: callaback,
+	}
+	SubscriptionPool = append(SubscriptionPool, temp)
 }
