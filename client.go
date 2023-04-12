@@ -7,6 +7,7 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/gofrs/uuid"
 )
 
 type ClientOptions struct {
@@ -17,7 +18,7 @@ type ClientOptions struct {
 type Client struct {
 	TlsConfig tls.Config
 	MQTT      mqtt.Client
-	ClientID  string
+	ClientID  uuid.UUID
 }
 
 type Token = mqtt.Token
@@ -34,7 +35,10 @@ func NewInstance(options ClientOptions) (Client, error) {
 	if err != nil {
 		return Client{}, err
 	}
-	client.ClientID = clientcert.Subject.CommonName
+	client.ClientID, err = uuid.FromString(clientcert.Subject.CommonName)
+	if err != nil {
+		return Client{}, err
+	}
 
 	serverCert := `-----BEGIN CERTIFICATE-----
 	MIIClTCCAhugAwIBAgIIQE4JchcUCD0wCgYIKoZIzj0EAwIwdzELMAkGA1UEBhMC
@@ -63,7 +67,7 @@ func NewInstance(options ClientOptions) (Client, error) {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker("ssl://gateway.unitgrid.in:8883")
 	opts.SetUsername("device")
-	opts.SetClientID(client.ClientID)
+	opts.SetClientID(client.ClientID.String())
 	opts.SetTLSConfig(&client.TlsConfig)
 	//opts.SetCleanSession(true)
 	//opts.SetStore(mqtt.NewFileStore(config.GlobalConfig.GetString("store") + "mqstore"))
