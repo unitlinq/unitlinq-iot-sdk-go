@@ -8,7 +8,7 @@ type Subscripiton struct {
 	Callback mqtt.MessageHandler
 }
 
-var SubscriptionPool []Subscripiton
+var subscriptionPool []Subscripiton
 var responseSubscribed bool
 var clientID string
 

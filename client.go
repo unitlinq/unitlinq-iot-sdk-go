@@ -125,14 +125,14 @@ func (c *Client) safeSubcscribe(topic string, qos byte, callaback mqtt.MessageHa
 		Qos:      qos,
 		Callback: callaback,
 	}
-	SubscriptionPool = append(SubscriptionPool, temp)
+	subscriptionPool = append(subscriptionPool, temp)
 	return nil
 }
 
 var ugconnectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	fmt.Println("Connection Established")
 	fmt.Println("Subscribing the topics")
-	for _, v := range SubscriptionPool {
+	for _, v := range subscriptionPool {
 		token := client.Subscribe(v.Topic, v.Qos, v.Callback)
 		if token.Wait() && token.Error() != nil {
 			fmt.Println(token.Error())
@@ -147,5 +147,5 @@ func (c *Client) safeSubAppend(topic string, qos byte, callaback mqtt.MessageHan
 		Qos:      qos,
 		Callback: callaback,
 	}
-	SubscriptionPool = append(SubscriptionPool, temp)
+	subscriptionPool = append(subscriptionPool, temp)
 }
