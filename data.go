@@ -37,7 +37,7 @@ func (c *Client) PushEnergyData(data EnergyStruct) Token {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	token = c.MQTT.Publish("device/data/energy/"+c.ClientID.String(), 1, true, encoded)
+	token = c.MQTT.Publish("device/data/energy/"+c.ClientID.String(), 2, true, encoded)
 	return token
 }
 
@@ -49,6 +49,6 @@ func (c *Client) PushFloatNP(datapoint NodeParamFloat) Token {
 		Value:     datapoint.Value,
 		Timestamp: datapoint.Timestamp,
 	}
-	token := c.MQTT.Publish("device/data/param/"+c.ClientID.String(), 1, true, temp)
+	token := c.MQTT.Publish("device/data/param/"+c.ClientID.String(), 2, true, temp)
 	return token
 }

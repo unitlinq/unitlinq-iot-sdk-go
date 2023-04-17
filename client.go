@@ -30,6 +30,8 @@ type Client struct {
 	timeout   time.Duration
 }
 
+var opts *mqtt.ClientOptions
+
 type Token = mqtt.Token
 
 func NewInstance(options ClientOptions) (Client, error) {
@@ -48,32 +50,19 @@ func NewInstance(options ClientOptions) (Client, error) {
 	if err != nil {
 		return Client{}, err
 	}
+	fmt.Println("Parsed:", client.ClientID.String())
 
-	serverCert := `-----BEGIN CERTIFICATE-----
-	MIIClTCCAhugAwIBAgIIQE4JchcUCD0wCgYIKoZIzj0EAwIwdzELMAkGA1UEBhMC
-	SU4xEDAOBgNVBAgTB0d1amFyYXQxDzANBgNVBAcTBkluZGlhbjEVMBMGA1UEChMM
-	RmxpbnQgRW5lcmd5MREwDwYDVQQLEwhVbml0Z3JpZDEbMBkGA1UEAxMSVW5pdGdy
-	aWQgUm9vdCBDQSAxMCAXDTIyMDkwOTAwMDAwMFoYDzIwNTIwOTA4MjM1OTU5WjB3
-	MQswCQYDVQQGEwJJTjEQMA4GA1UECBMHR3VqYXJhdDEPMA0GA1UEBxMGSW5kaWFu
-	MRUwEwYDVQQKEwxGbGludCBFbmVyZ3kxETAPBgNVBAsTCFVuaXRncmlkMRswGQYD
-	VQQDExJVbml0Z3JpZCBSb290IENBIDEwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAARm
-	49Ttjevys9q21Ue3bN2LdjCbgSME7T2rONjBCH6onja6U2PfS4hw9ALyjqprBcx0
-	/qlmGpnAuiVEm4qJWn1CyNQfYEfZPpvuV0NkBON4Nx3GEzEgthvuMtij/NROxYaj
-	cjBwMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFHD+22jmlpoT7can4bXC1Oic
-	c8BLMAsGA1UdDwQEAwIBBjARBglghkgBhvhCAQEEBAMCAAcwHgYJYIZIAYb4QgEN
-	BBEWD3hjYSBjZXJ0aWZpY2F0ZTAKBggqhkjOPQQDAgNoADBlAjBl5LeydupNqGzs
-	YHObNZqZuHEz1XRH0siSs70ZGLHe3jbJxzDZF9lJeS8pNio3S6wCMQDYkWMf2wuR
-	wbd/MYG7mURoAkzwlIJXHN94USIQ9KQ9hWCKTl7UyzGChPKpunDAJe0=
-	-----END CERTIFICATE-----`
-
-	certPool.AppendCertsFromPEM([]byte(serverCert))
+	ok := certPool.AppendCertsFromPEM([]byte(serverCertEmbedded))
+	if !ok {
+		fmt.Println("Server cert not parsed")
+	}
 
 	client.TlsConfig = tls.Config{
 		RootCAs:      certPool,
 		Certificates: []tls.Certificate{cert},
 	}
 	client.timeout = options.RequestTimeout
-	opts := mqtt.NewClientOptions()
+	opts = mqtt.NewClientOptions()
 	opts.AddBroker("ssl://gateway.unitgrid.in:8883")
 	opts.SetUsername("device")
 	opts.SetClientID(client.ClientID.String())
