@@ -10,6 +10,7 @@ import (
 	"github.com/gofrs/uuid"
 )
 
+// ClientOptions - A struct describing the client options
 type ClientOptions struct {
 	Cert           string
 	CertKey        string
@@ -37,6 +38,8 @@ var opts *mqtt.ClientOptions
 
 type Token = mqtt.Token
 
+// Create a new instance of unitlinq client. You can create as many instance you want. The only restriction is that you can not use same client
+// certificate more than once.
 func NewInstance(options ClientOptions) (Client, error) {
 	var client Client
 	certPool := x509.NewCertPool()
@@ -90,6 +93,7 @@ func NewInstance(options ClientOptions) (Client, error) {
 	return client, nil
 }
 
+// Establish a connection with unitlinq server
 func (c *Client) Connect() Token {
 	token := c.MQTT.Connect()
 	c.safeSubcscribe("device/"+c.GetClientID()+"/api/response/cbor", 1, defaultResponseHandler)
@@ -97,14 +101,17 @@ func (c *Client) Connect() Token {
 	return token
 }
 
+// Close the connection
 func (c *Client) Close() {
 	c.MQTT.Disconnect(1000)
 }
 
+// Check whether connection is active or not. Returns true if connection is active
 func (c *Client) IsConnected() bool {
 	return c.MQTT.IsConnectionOpen()
 }
 
+// Get client ID string parsed from client certificate
 func (c *Client) GetClientID() string {
 	return c.ClientID.String()
 }
