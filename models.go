@@ -121,3 +121,6 @@ BBEWD3hjYSBjZXJ0aWZpY2F0ZTAKBggqhkjOPQQDAgNoADBlAjBl5LeydupNqGzs
 YHObNZqZuHEz1XRH0siSs70ZGLHe3jbJxzDZF9lJeS8pNio3S6wCMQDYkWMf2wuR
 wbd/MYG7mURoAkzwlIJXHN94USIQ9KQ9hWCKTl7UyzGChPKpunDAJe0=
 -----END CERTIFICATE-----`
+
+type OnConnectCallback func(Client)
+type OnConnLostCallback func(Client, error)

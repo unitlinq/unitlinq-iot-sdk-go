@@ -16,6 +16,8 @@ type ClientOptions struct {
 	StorageType    int
 	Store          string
 	RequestTimeout time.Duration
+	OnConnect      OnConnectCallback
+	OnConnLost     OnConnLostCallback
 }
 
 const (
@@ -28,6 +30,7 @@ type Client struct {
 	MQTT      mqtt.Client
 	ClientID  uuid.UUID
 	timeout   time.Duration
+	options   ClientOptions
 }
 
 var opts *mqtt.ClientOptions
@@ -62,6 +65,7 @@ func NewInstance(options ClientOptions) (Client, error) {
 		Certificates: []tls.Certificate{cert},
 	}
 	client.timeout = options.RequestTimeout
+	client.options = options
 	opts = mqtt.NewClientOptions()
 	opts.AddBroker("ssl://gateway.unitgrid.in:8883")
 	opts.SetUsername("device")
@@ -77,7 +81,8 @@ func NewInstance(options ClientOptions) (Client, error) {
 	opts.SetConnectRetryInterval(10 * time.Second)
 	opts.SetConnectRetry(true)
 	opts.SetAutoReconnect(true)
-	opts.SetOnConnectHandler(ugconnectHandler)
+	opts.SetOnConnectHandler(client.onConnectActions)
+	opts.SetConnectionLostHandler(client.onConnLostAction)
 	//opts.SetConnectionLostHandler(ugconnectionLostHandler)
 	opts.SetCleanSession(true)
 	client.MQTT = mqtt.NewClient(opts)
@@ -118,16 +123,23 @@ func (c *Client) safeSubcscribe(topic string, qos byte, callaback mqtt.MessageHa
 	return nil
 }
 
-var ugconnectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("Connection Established")
-	fmt.Println("Subscribing the topics")
+func (c *Client) onConnectActions(client mqtt.Client) {
+	//fmt.Println("Connection Established")
+	//fmt.Println("Subscribing the topics")
+	fmt.Println("On connect handler for Client with CLientID:", c.GetClientID())
 	for _, v := range subscriptionPool {
 		token := client.Subscribe(v.Topic, v.Qos, v.Callback)
 		if token.Wait() && token.Error() != nil {
 			fmt.Println(token.Error())
 		}
-		fmt.Printf("Subscribed: %s\n", v.Topic)
+		//fmt.Printf("Subscribed: %s\n", v.Topic)
 	}
+	// Issue callback
+	c.options.OnConnect(*c)
+}
+
+func (c *Client) onConnLostAction(client mqtt.Client, err error) {
+	c.options.OnConnLost(*c, err)
 }
 
 func (c *Client) safeSubAppend(topic string, qos byte, callaback mqtt.MessageHandler) {
