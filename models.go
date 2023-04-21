@@ -36,6 +36,32 @@ type EnergyStruct struct {
 	Timestamp   int64
 }
 
+func NewDefaultEnergyStruct() EnergyStruct {
+	return EnergyStruct{
+		V1:          0,
+		V2:          0,
+		V3:          0,
+		V12:         0,
+		V23:         0,
+		V31:         0,
+		I1:          0,
+		I2:          0,
+		I3:          0,
+		Pf1:         1,
+		Pf2:         1,
+		Pf3:         1,
+		W1:          0,
+		W2:          0,
+		W3:          0,
+		ImportkWh:   0,
+		Exportkwh:   0,
+		ImportkVArh: 0,
+		ExportkVArh: 0,
+		Freq:        0,
+		Timestamp:   0,
+	}
+}
+
 type pushEnergyStruct struct {
 	DeviceID    []byte  `cbor:"nodeid"`
 	V1          float32 `cbor:"v1"`
@@ -65,6 +91,14 @@ type NodeParamFloat struct {
 	ParamID   []byte
 	Value     float32
 	Timestamp int64
+}
+
+func NewDefaultNpFloat() NodeParamFloat {
+	return NodeParamFloat{
+		ParamID:   nil,
+		Value:     0,
+		Timestamp: 0,
+	}
 }
 
 type genericReposne struct {
