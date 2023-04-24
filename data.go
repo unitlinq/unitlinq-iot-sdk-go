@@ -100,6 +100,10 @@ func (c *Client) NPFloatGateWay(data NodeParamFloat, node uuid.UUID) Token {
 		Value:     data.Value,
 		Timestamp: data.Timestamp,
 	}
-	token := c.MQTT.Publish("device/"+c.GetClientID()+"/gateway/param", 2, true, temp)
+	encoded, err := cbor.Marshal(temp)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	token := c.MQTT.Publish("device/"+c.GetClientID()+"/gateway/param", 2, true, encoded)
 	return token
 }
