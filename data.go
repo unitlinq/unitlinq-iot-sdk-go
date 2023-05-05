@@ -38,7 +38,7 @@ func (c *Client) PushEnergyData(data EnergyStruct) Token {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	token = c.MQTT.Publish("device/data/energy/"+c.ClientID.String(), 1, false, encoded)
+	token = c.MQTT.Publish("device/data/energy/"+c.ClientID.String(), 1, true, encoded)
 	return token
 }
 
@@ -54,7 +54,7 @@ func (c *Client) PushFloatNP(datapoint NodeParamFloat) Token {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	token := c.MQTT.Publish("device/data/param/"+c.ClientID.String(), 1, false, encoded)
+	token := c.MQTT.Publish("device/data/param/"+c.ClientID.String(), 1, true, encoded)
 	return token
 }
 
@@ -90,7 +90,7 @@ func (c *Client) EnergyGateWay(data EnergyStruct, node uuid.UUID) Token {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	token = c.MQTT.Publish("device/"+c.GetClientID()+"/gateway/energy", 1, false, encoded)
+	token = c.MQTT.Publish("device/"+c.GetClientID()+"/gateway/energy", 1, true, encoded)
 	return token
 }
 
@@ -108,6 +108,6 @@ func (c *Client) NPFloatGateWay(data NodeParamFloat, node uuid.UUID) Token {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	token := c.MQTT.Publish("device/"+c.GetClientID()+"/gateway/param", 1, false, encoded)
+	token := c.MQTT.Publish("device/"+c.GetClientID()+"/gateway/param", 1, true, encoded)
 	return token
 }

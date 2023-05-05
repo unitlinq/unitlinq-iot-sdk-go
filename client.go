@@ -74,7 +74,7 @@ func NewInstance(options ClientOptions) (Client, error) {
 	opts.SetUsername("device")
 	opts.SetClientID(client.ClientID.String())
 	opts.SetTLSConfig(&client.TlsConfig)
-	//opts.SetCleanSession(true)
+	opts.SetCleanSession(true)
 	switch options.StorageType {
 	case Memory:
 		opts.SetStore(mqtt.NewMemoryStore())
