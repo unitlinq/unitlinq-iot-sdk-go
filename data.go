@@ -8,9 +8,9 @@ import (
 )
 
 // Push Energy readings to the unitlinq platfrom.
-func (c *Client) PushEnergyData(data EnergyStruct) Token {
+func (c *Client) PushEnergyData(data EnergyStruct) (int, error) {
 	var datapoint pushEnergyStruct
-	var token Token
+	var msg messages
 	datapoint.V1 = data.V1
 	datapoint.V2 = data.V2
 	datapoint.V3 = data.V3
@@ -38,12 +38,17 @@ func (c *Client) PushEnergyData(data EnergyStruct) Token {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	token = c.MQTT.Publish("device/data/energy/"+c.ClientID.String(), 1, true, encoded)
-	return token
+	msg.Topic = "device/data/energy/" + c.ClientID.String()
+	msg.Sent = false
+	msg.Payload = encoded
+	id, err := c.pushMessage(msg)
+	return id, err
+	//token = c.MQTT.Publish("device/data/energy/"+c.ClientID.String(), 1, true, encoded)
 }
 
-func (c *Client) PushFloatNP(datapoint NodeParamFloat) Token {
+func (c *Client) PushFloatNP(datapoint NodeParamFloat) (int, error) {
 	devID := c.ClientID.Bytes()
+	var msg messages
 	temp := pushNodeParamFloat{
 		DeviceID:  devID[:],
 		ParamID:   datapoint.ParamID,
@@ -54,15 +59,19 @@ func (c *Client) PushFloatNP(datapoint NodeParamFloat) Token {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	token := c.MQTT.Publish("device/data/param/"+c.ClientID.String(), 1, true, encoded)
-	return token
+	msg.Topic = "device/data/energy/" + c.ClientID.String()
+	msg.Sent = false
+	msg.Payload = encoded
+	id, err := c.pushMessage(msg)
+	return id, err
+	//token := c.MQTT.Publish("device/data/param/"+c.ClientID.String(), 1, true, encoded)
 }
 
 // Act as a gateway, Send energy data on behalf of other node. Please note that to act as a gateway for other device, both devices must be registered
 // with the unitlinq platform
-func (c *Client) EnergyGateWay(data EnergyStruct, node uuid.UUID) Token {
+func (c *Client) EnergyGateWay(data EnergyStruct, node uuid.UUID) (int, error) {
 	var datapoint pushEnergyStruct
-	var token Token
+	var msg messages
 	datapoint.V1 = data.V1
 	datapoint.V2 = data.V2
 	datapoint.V3 = data.V3
@@ -90,13 +99,17 @@ func (c *Client) EnergyGateWay(data EnergyStruct, node uuid.UUID) Token {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	token = c.MQTT.Publish("device/"+c.GetClientID()+"/gateway/energy", 1, true, encoded)
-	return token
+	msg.Topic = "device/" + c.GetClientID() + "/gateway/energy"
+	msg.Sent = false
+	msg.Payload = encoded
+	id, err := c.pushMessage(msg)
+	return id, err
 }
 
 // Act as a gateway, send parameter data on behalf of other node. Please note that to act as a gateway for other device, both devices must be registered
 // with the unitlinq platform
-func (c *Client) NPFloatGateWay(data NodeParamFloat, node uuid.UUID) Token {
+func (c *Client) NPFloatGateWay(data NodeParamFloat, node uuid.UUID) (int, error) {
+	var msg messages
 	devID := node.Bytes()
 	temp := pushNodeParamFloat{
 		DeviceID:  devID[:],
@@ -108,6 +121,9 @@ func (c *Client) NPFloatGateWay(data NodeParamFloat, node uuid.UUID) Token {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	token := c.MQTT.Publish("device/"+c.GetClientID()+"/gateway/param", 1, true, encoded)
-	return token
+	msg.Topic = "device/" + c.GetClientID() + "/gateway/param"
+	msg.Sent = false
+	msg.Payload = encoded
+	id, err := c.pushMessage(msg)
+	return id, err
 }

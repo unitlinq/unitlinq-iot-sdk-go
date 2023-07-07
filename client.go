@@ -4,10 +4,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gofrs/uuid"
+	"gorm.io/gorm"
 )
 
 // ClientOptions - A struct describing the client options
@@ -24,6 +26,7 @@ type ClientOptions struct {
 const (
 	Memory int = 0
 	File   int = 1
+	SQLite int = 2
 )
 
 type Client struct {
@@ -32,6 +35,9 @@ type Client struct {
 	ClientID  uuid.UUID
 	timeout   time.Duration
 	options   ClientOptions
+	db        *gorm.DB
+	destroy   chan bool
+	dbLock    sync.Mutex
 }
 
 var opts *mqtt.ClientOptions
@@ -80,14 +86,20 @@ func NewInstance(options ClientOptions) (Client, error) {
 		opts.SetStore(mqtt.NewMemoryStore())
 	case File:
 		opts.SetStore(mqtt.NewFileStore(options.Store + "mqttstore"))
+	case SQLite:
+		opts.SetStore(mqtt.NewMemoryStore())
+		// Initialize SQLite DB
+		client.initStorage(options.Store)
 	}
-	opts.SetConnectRetryInterval(10 * time.Second)
+	opts.SetConnectRetryInterval(2 * time.Second)
 	opts.SetConnectRetry(true)
 	opts.SetAutoReconnect(true)
 	opts.SetOnConnectHandler(client.onConnectActions)
+	opts.SetReconnectingHandler(client.onRetryAction)
 	opts.SetConnectionLostHandler(client.onConnLostAction)
 	//opts.SetConnectionLostHandler(ugconnectionLostHandler)
 	opts.SetCleanSession(true)
+	opts.SetWriteTimeout(10 * time.Second)
 	client.MQTT = mqtt.NewClient(opts)
 	clientID = client.GetClientID()
 	return client, nil
@@ -98,12 +110,18 @@ func (c *Client) Connect() Token {
 	token := c.MQTT.Connect()
 	c.safeSubcscribe("device/"+c.GetClientID()+"/api/response/cbor", 1, defaultResponseHandler)
 	responseSubscribed = true
+	go c.SubmitMessagesTask()
 	return token
 }
 
 // Close the connection
 func (c *Client) Close() {
 	c.MQTT.Disconnect(1000)
+	DB, err := c.db.DB()
+	if err != nil {
+		fmt.Println(err)
+	}
+	DB.Close()
 }
 
 // Check whether connection is active or not. Returns true if connection is active
@@ -147,6 +165,10 @@ func (c *Client) onConnectActions(client mqtt.Client) {
 
 func (c *Client) onConnLostAction(client mqtt.Client, err error) {
 	c.options.OnConnLost(*c, err)
+}
+
+func (c *Client) onRetryAction(cl mqtt.Client, opts *mqtt.ClientOptions) {
+	fmt.Println("Retrying to connect with broker!")
 }
 
 func (c *Client) safeSubAppend(topic string, qos byte, callaback mqtt.MessageHandler) {
